@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { addUser } from './actions';
+import { useSession, signIn, signOut } from 'next-auth/react';
 
 export default function Home() {
+  const { data: session } = useSession();
+
   const [users, setUsers] = useState([]);
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -36,13 +39,45 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (session) {
+      fetchUsers();
+    }
+  }, [session]);
+
+  if (!session) {
+    return (
+      <main className="p-4">
+        <h1 className="text-2xl font-bold mb-4">User Management</h1>
+        <button
+          onClick={() => signIn('google')}
+          className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer"
+        >
+          Sign in with Google
+        </button>
+      </main>
+    );
+  }
 
   return (
     <main className="p-4">
-      <h1 className="text-2xl font-bold mb-4">User Management</h1>
-
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">User Management</h1>
+        <div className="flex items-center gap-4">
+         {session.user?.image && (
+        <img src={session.user.image} alt="User" className="w-8 h-8 rounded-full" />
+      )}
+        <span className="text-gray-100 font-medium">
+         {session.user?.name}
+    </span>
+         
+    <button
+      onClick={() => signOut()}
+      className="bg-red-500 text-white px-3 py-1 rounded cursor-pointer"
+    >
+      Sign Out
+    </button>
+        </div>
+      </div>
 
       <form
         onSubmit={async (e) => {
@@ -59,7 +94,6 @@ export default function Home() {
         <button type="submit" className="bg-blue-500 text-white p-2">Add User</button>
       </form>
 
-      {/* List of users */}
       <ul className="space-y-4">
         {users.map((user: any) => (
           <li key={user._id} className="border p-4 rounded flex flex-col gap-2">
@@ -82,10 +116,7 @@ export default function Home() {
                   className="border p-1"
                 />
                 <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="bg-green-500 text-white px-3 py-1 rounded"
-                  >
+                  <button type="submit" className="bg-green-500 text-white px-3 py-1 rounded">
                     Save
                   </button>
                   <button
